@@ -1,0 +1,70 @@
+RAG (Retrieval-Augmented Generation) Best Practices
+
+Retrieval-Augmented Generation combines the power of large language models with external knowledge retrieval to provide accurate, up-to-date, and contextual responses. This document outlines best practices for building production-ready RAG systems.
+
+Architecture Components:
+
+1. Document Processing Pipeline
+- Chunk documents into semantically meaningful segments
+- Optimal chunk sizes: 256-1024 tokens depending on content type
+- Use overlapping chunks (10-20%) to preserve context across boundaries
+- Preserve document metadata for citation tracking
+
+2. Embedding Strategy
+- Use domain-appropriate embedding models
+- NVIDIA NV-Embed-QA excels at question-answering scenarios
+- Consider fine-tuning embeddings on domain-specific data
+- Normalize embeddings for consistent similarity scores
+
+3. Vector Database Selection
+Recommended options:
+- pgvector: PostgreSQL extension, good for moderate scale
+- Pinecone: Managed service with excellent scalability
+- Milvus: Open-source, high performance at scale
+- Weaviate: Rich filtering and hybrid search capabilities
+
+4. Retrieval Optimization
+- Use hybrid search (semantic + keyword) for better recall
+- Implement re-ranking with cross-encoder models
+- Filter results by metadata before semantic search
+- Adjust top-k based on query complexity
+
+5. Prompt Engineering
+- Clearly separate context from instructions
+- Include citation guidance in system prompt
+- Handle "no relevant context" gracefully
+- Limit context window to avoid hallucinations
+
+6. Quality Assurance
+Metrics to track:
+- Retrieval precision and recall
+- Answer faithfulness (does answer match context?)
+- Answer relevance (does answer address the question?)
+- Response latency (TTFT, total latency)
+
+7. Production Considerations
+- Implement request caching for common queries
+- Use async processing for document ingestion
+- Set up monitoring for embedding drift
+- Implement feedback loops for continuous improvement
+
+Common Pitfalls to Avoid:
+- Chunks too large: Dilutes relevant information
+- Chunks too small: Loses important context
+- Ignoring metadata: Misses filtering opportunities
+- Over-relying on semantic search: Keyword matching sometimes better
+- Not handling edge cases: Empty results, irrelevant context
+
+Advanced Techniques:
+- HyDE (Hypothetical Document Embedding): Generate hypothetical answer, embed, then retrieve
+- Parent-child chunking: Retrieve small chunks, return larger parent context
+- Multi-query retrieval: Generate multiple query variations
+- Query decomposition: Break complex queries into sub-queries
+
+Performance Benchmarks (with NVIDIA NIM):
+- Embedding latency: <50ms per document
+- Retrieval latency: <20ms for top-10 results
+- LLM generation: <200ms TTFT with streaming
+- End-to-end: <1 second for typical queries
+
+For enterprise deployments, consider NVIDIA AI Enterprise for full support and optimized performance.

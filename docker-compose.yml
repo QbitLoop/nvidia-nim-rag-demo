@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: nim-rag-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rag_demo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nim-rag-backend
+    environment:
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/rag_demo
+      - NIM_BASE_URL=https://integrate.api.nvidia.com/v1
+      - NIM_LLM_MODEL=meta/llama-3.1-70b-instruct
+      - NIM_EMBED_MODEL=nvidia/nv-embedqa-e5-v5
+      - PGVECTOR_DIMENSION=1024
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # Streamlit Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: nim-rag-frontend
+    environment:
+      - API_BASE_URL=http://backend:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+    command: streamlit run app/streamlit_app.py --server.address 0.0.0.0
+
+volumes:
+  pgdata:

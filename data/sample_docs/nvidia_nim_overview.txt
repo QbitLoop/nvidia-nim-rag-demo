@@ -1,0 +1,51 @@
+NVIDIA NIM - Inference Microservices Overview
+
+NVIDIA NIM (NVIDIA Inference Microservices) is a set of accelerated inference microservices that allow developers to deploy AI models at scale with optimal performance. NIM provides pre-built containers optimized for NVIDIA GPUs that can be deployed anywhere - from data centers to the cloud to edge devices.
+
+Key Features:
+- Industry-standard APIs (OpenAI-compatible)
+- Optimized inference with TensorRT-LLM
+- Support for multiple model architectures
+- Easy deployment via containers
+- Scalable from single GPU to multi-node clusters
+
+Supported Models:
+NIM supports a wide range of foundation models including:
+- Llama 3.1 (8B, 70B, 405B)
+- Mistral and Mixtral models
+- NVIDIA custom models (Nemotron)
+- Embedding models (NV-Embed-QA)
+
+Deployment Options:
+1. NVIDIA AI Enterprise: Full enterprise support with SLAs
+2. build.nvidia.com: API access to hosted models
+3. Self-hosted: Deploy in your own infrastructure using NIM containers
+
+Performance Benefits:
+- Up to 5x faster inference compared to baseline implementations
+- Optimized memory usage with quantization support
+- Automatic batching for improved throughput
+- Low-latency serving with continuous batching
+
+Use Cases:
+- Retrieval-Augmented Generation (RAG)
+- Conversational AI and chatbots
+- Code generation and assistance
+- Document understanding and summarization
+- Multi-modal applications
+
+Integration:
+NIM uses OpenAI-compatible APIs, making it easy to integrate with existing applications. Simply change the base URL and API key to switch from OpenAI to NIM.
+
+Example Python code:
+from openai import OpenAI
+client = OpenAI(
+    base_url="https://integrate.api.nvidia.com/v1",
+    api_key="nvapi-..."
+)
+response = client.chat.completions.create(
+    model="meta/llama-3.1-70b-instruct",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+
+For more information, visit build.nvidia.com or developer.nvidia.com/nim.

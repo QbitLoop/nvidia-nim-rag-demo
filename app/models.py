@@ -1,6 +1,6 @@
 """Pydantic models for the RAG API."""
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 
 
@@ -18,9 +18,9 @@ class DocumentChunk(BaseModel):
     id: Optional[str] = None
     document_id: str
     content: str
-    embedding: Optional[list[float]] = None
+    embedding: Optional[List[float]] = None
     chunk_index: int
-    metadata: dict = Field(default_factory=dict)
+    metadata: Dict = Field(default_factory=dict)
 
 
 class QueryRequest(BaseModel):
@@ -44,8 +44,8 @@ class QueryResponse(BaseModel):
     """Response model for RAG queries."""
     query: str
     answer: str
-    citations: list[Citation] = Field(default_factory=list)
-    metrics: dict = Field(default_factory=dict)
+    citations: List[Citation] = Field(default_factory=list)
+    metrics: Dict = Field(default_factory=dict)
 
 
 class IngestionRequest(BaseModel):

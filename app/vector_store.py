@@ -1,8 +1,9 @@
 """Vector store operations using PostgreSQL with pgvector."""
 import os
+import json
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 import asyncpg
 from loguru import logger
 
@@ -12,7 +13,7 @@ class VectorStore:
 
     def __init__(
         self,
-        database_url: str | None = None,
+        database_url: Optional[str] = None,
         dimension: int = 1024
     ):
         self.database_url = database_url or os.getenv("DATABASE_URL")
@@ -73,11 +74,11 @@ class VectorStore:
                 );
             """)
 
-            # Create vector similarity index (IVFFlat for approximate search)
+            # Create vector similarity index (HNSW - works well with any dataset size)
             await conn.execute("""
                 CREATE INDEX IF NOT EXISTS chunks_embedding_idx
-                ON chunks USING ivfflat (embedding vector_cosine_ops)
-                WITH (lists = 100);
+                ON chunks USING hnsw (embedding vector_cosine_ops)
+                WITH (m = 16, ef_construction = 64);
             """)
 
             logger.info("Database schema initialized")
@@ -96,9 +97,9 @@ class VectorStore:
             await conn.execute(
                 """
                 INSERT INTO documents (id, content, source, metadata)
-                VALUES ($1, $2, $3, $4)
+                VALUES ($1, $2, $3, $4::jsonb)
                 """,
-                uuid.UUID(doc_id), content, source, metadata
+                uuid.UUID(doc_id), content, source, json.dumps(metadata)
             )
 
         logger.info(f"Document inserted: {doc_id}")
@@ -108,7 +109,7 @@ class VectorStore:
         self,
         document_id: str,
         content: str,
-        embedding: list[float],
+        embedding: List[float],
         chunk_index: int,
         metadata: dict = None
     ) -> str:
@@ -116,29 +117,35 @@ class VectorStore:
         chunk_id = str(uuid.uuid4())
         metadata = metadata or {}
 
+        # Convert embedding list to pgvector string format
+        embedding_str = "[" + ",".join(str(x) for x in embedding) + "]"
+
         async with self.pool.acquire() as conn:
             await conn.execute(
                 """
                 INSERT INTO chunks (id, document_id, content, embedding, chunk_index, metadata)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                VALUES ($1, $2, $3, $4::vector, $5, $6::jsonb)
                 """,
                 uuid.UUID(chunk_id),
                 uuid.UUID(document_id),
                 content,
-                embedding,
+                embedding_str,
                 chunk_index,
-                metadata
+                json.dumps(metadata)
             )
 
         return chunk_id
 
     async def search_similar(
         self,
-        query_embedding: list[float],
+        query_embedding: List[float],
         top_k: int = 5,
         similarity_threshold: float = 0.7
-    ) -> list[dict]:
+    ) -> List[Dict]:
         """Search for similar chunks using cosine similarity."""
+        # Convert query embedding to pgvector string format
+        embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
+
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(
                 """
@@ -156,7 +163,7 @@ class VectorStore:
                 ORDER BY c.embedding <=> $1::vector
                 LIMIT $2
                 """,
-                query_embedding,
+                embedding_str,
                 top_k,
                 similarity_threshold
             )

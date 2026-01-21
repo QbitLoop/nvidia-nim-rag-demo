@@ -1,5 +1,6 @@
 """RAG pipeline orchestration."""
 import time
+from typing import List, Dict
 import tiktoken
 from loguru import logger
 from .nim_client import NIMClient, RAG_SYSTEM_PROMPT, format_context_for_rag, build_rag_prompt
@@ -24,7 +25,7 @@ class RAGPipeline:
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
         logger.info("RAG Pipeline initialized")
 
-    def _chunk_text(self, text: str) -> list[str]:
+    def _chunk_text(self, text: str) -> List[str]:
         """Split text into overlapping chunks based on token count."""
         tokens = self.tokenizer.encode(text)
         chunks = []
@@ -159,8 +160,8 @@ class RAGPipeline:
 
     async def batch_ingest(
         self,
-        documents: list[dict]
-    ) -> list[IngestionResponse]:
+        documents: List[Dict]
+    ) -> List[IngestionResponse]:
         """Ingest multiple documents."""
         results = []
         for doc in documents:

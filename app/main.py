@@ -2,6 +2,7 @@
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
+from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
@@ -21,9 +22,9 @@ from .rag_pipeline import RAGPipeline
 load_dotenv()
 
 # Global instances
-nim_client: NIMClient | None = None
-vector_store: VectorStore | None = None
-rag_pipeline: RAGPipeline | None = None
+nim_client: Optional[NIMClient] = None
+vector_store: Optional[VectorStore] = None
+rag_pipeline: Optional[RAGPipeline] = None
 
 
 @asynccontextmanager

@@ -62,8 +62,8 @@ class RAGPipeline:
         # Chunk the document
         chunks = self._chunk_text(content)
 
-        # Generate embeddings for all chunks
-        embeddings = await self.nim.embed(chunks)
+        # Generate embeddings for all chunks (use 'passage' type for documents)
+        embeddings = await self.nim.embed_documents(chunks)
 
         # Insert chunks with embeddings
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
@@ -96,9 +96,9 @@ class RAGPipeline:
         start_time = time.perf_counter()
         metrics = {}
 
-        # Step 1: Embed the query
+        # Step 1: Embed the query (use 'query' type for search)
         embed_start = time.perf_counter()
-        query_embedding = await self.nim.embed_single(query)
+        query_embedding = await self.nim.embed_query(query)
         metrics["embed_time_ms"] = (time.perf_counter() - embed_start) * 1000
 
         # Step 2: Retrieve similar chunks

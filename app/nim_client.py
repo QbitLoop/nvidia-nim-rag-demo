@@ -1,7 +1,8 @@
 """NVIDIA NIM API client for LLM inference and embeddings."""
 import os
 import time
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional, List, Union
+import httpx
 from openai import AsyncOpenAI
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -12,7 +13,7 @@ class NIMClient:
 
     def __init__(
         self,
-        api_key: str | None = None,
+        api_key: Optional[str] = None,
         base_url: str = "https://integrate.api.nvidia.com/v1",
         llm_model: str = "meta/llama-3.1-70b-instruct",
         embed_model: str = "nvidia/nv-embedqa-e5-v5"
@@ -35,11 +36,11 @@ class NIMClient:
     async def generate(
         self,
         prompt: str,
-        system_prompt: str | None = None,
+        system_prompt: Optional[str] = None,
         max_tokens: int = 1024,
         temperature: float = 0.7,
         stream: bool = False
-    ) -> str | AsyncGenerator[str, None]:
+    ) -> Union[str, AsyncGenerator[str, None]]:
         """Generate text using NVIDIA NIM LLM."""
         start_time = time.perf_counter()
 
@@ -95,35 +96,60 @@ class NIMClient:
                 yield chunk.choices[0].delta.content
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
-    async def embed(self, texts: list[str]) -> list[list[float]]:
-        """Generate embeddings using NVIDIA NV-Embed-QA."""
+    async def embed(self, texts: List[str], input_type: str = "query") -> List[List[float]]:
+        """Generate embeddings using NVIDIA NV-Embed-QA.
+
+        Args:
+            texts: List of texts to embed
+            input_type: 'query' for search queries, 'passage' for documents
+        """
         start_time = time.perf_counter()
 
         try:
-            response = await self.client.embeddings.create(
-                model=self.embed_model,
-                input=texts,
-                encoding_format="float"
-            )
+            async with httpx.AsyncClient() as http_client:
+                response = await http_client.post(
+                    f"{self.base_url}/embeddings",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": self.embed_model,
+                        "input": texts,
+                        "input_type": input_type,
+                        "encoding_format": "float"
+                    },
+                    timeout=30.0
+                )
+                response.raise_for_status()
+                data = response.json()
 
             elapsed = (time.perf_counter() - start_time) * 1000
             logger.info(f"Generated {len(texts)} embeddings in {elapsed:.2f}ms")
 
-            return [item.embedding for item in response.data]
+            return [item["embedding"] for item in data["data"]]
 
         except Exception as e:
             logger.error(f"NIM embedding error: {e}")
             raise
 
-    async def embed_single(self, text: str) -> list[float]:
+    async def embed_single(self, text: str, input_type: str = "query") -> List[float]:
         """Generate embedding for single text."""
-        embeddings = await self.embed([text])
+        embeddings = await self.embed([text], input_type=input_type)
         return embeddings[0]
+
+    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for documents (passages)."""
+        return await self.embed(texts, input_type="passage")
+
+    async def embed_query(self, text: str) -> List[float]:
+        """Generate embedding for a search query."""
+        return await self.embed_single(text, input_type="query")
 
     async def health_check(self) -> bool:
         """Check if NIM API is accessible."""
         try:
-            await self.embed(["health check"])
+            await self.embed(["health check"], input_type="query")
             return True
         except Exception as e:
             logger.warning(f"NIM health check failed: {e}")
@@ -146,7 +172,7 @@ content...
 [End Document]
 """
 
-def format_context_for_rag(chunks: list[dict]) -> str:
+def format_context_for_rag(chunks: List[dict]) -> str:
     """Format retrieved chunks into context for LLM."""
     context_parts = []
     for chunk in chunks:

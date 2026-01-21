@@ -105,6 +105,10 @@ class NIMClient:
         """
         start_time = time.perf_counter()
 
+        # Truncate very long texts to avoid API errors
+        max_chars = 8000  # Safe limit for embedding models
+        truncated_texts = [t[:max_chars] if len(t) > max_chars else t for t in texts]
+
         try:
             async with httpx.AsyncClient() as http_client:
                 response = await http_client.post(
@@ -115,12 +119,16 @@ class NIMClient:
                     },
                     json={
                         "model": self.embed_model,
-                        "input": texts,
+                        "input": truncated_texts,
                         "input_type": input_type,
                         "encoding_format": "float"
                     },
-                    timeout=30.0
+                    timeout=60.0
                 )
+
+                if response.status_code != 200:
+                    logger.error(f"NIM API error {response.status_code}: {response.text}")
+
                 response.raise_for_status()
                 data = response.json()
 
@@ -129,6 +137,9 @@ class NIMClient:
 
             return [item["embedding"] for item in data["data"]]
 
+        except httpx.HTTPStatusError as e:
+            logger.error(f"NIM embedding HTTP error: {e.response.status_code} - {e.response.text}")
+            raise
         except Exception as e:
             logger.error(f"NIM embedding error: {e}")
             raise
@@ -138,15 +149,15 @@ class NIMClient:
         embeddings = await self.embed([text], input_type=input_type)
         return embeddings[0]
 
-    async def embed_documents(self, texts: List[str], batch_size: int = 8) -> List[List[float]]:
-        """Generate embeddings for documents (passages) with batching."""
+    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for documents (passages) one at a time."""
         all_embeddings = []
 
-        # Process in batches to avoid API limits
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            batch_embeddings = await self.embed(batch, input_type="passage")
-            all_embeddings.extend(batch_embeddings)
+        # Process one at a time to avoid API limits
+        for i, text in enumerate(texts):
+            logger.info(f"Embedding chunk {i+1}/{len(texts)}")
+            embedding = await self.embed([text], input_type="passage")
+            all_embeddings.extend(embedding)
 
         return all_embeddings
 

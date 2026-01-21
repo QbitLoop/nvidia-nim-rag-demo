@@ -138,9 +138,17 @@ class NIMClient:
         embeddings = await self.embed([text], input_type=input_type)
         return embeddings[0]
 
-    async def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for documents (passages)."""
-        return await self.embed(texts, input_type="passage")
+    async def embed_documents(self, texts: List[str], batch_size: int = 8) -> List[List[float]]:
+        """Generate embeddings for documents (passages) with batching."""
+        all_embeddings = []
+
+        # Process in batches to avoid API limits
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            batch_embeddings = await self.embed(batch, input_type="passage")
+            all_embeddings.extend(batch_embeddings)
+
+        return all_embeddings
 
     async def embed_query(self, text: str) -> List[float]:
         """Generate embedding for a search query."""

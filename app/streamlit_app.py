@@ -93,7 +93,7 @@ with st.sidebar:
     # Configuration
     st.subheader("Query Settings")
     top_k = st.slider("Top K Results", 1, 20, 5)
-    threshold = st.slider("Similarity Threshold", 0.0, 1.0, 0.7)
+    threshold = st.slider("Similarity Threshold", 0.0, 1.0, 0.2)
 
     st.markdown("---")
     st.markdown("**Built with:**")

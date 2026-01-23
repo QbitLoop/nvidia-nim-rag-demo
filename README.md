@@ -1,110 +1,123 @@
 # NVIDIA NIM RAG Demo
 
-Demonstrating retrieval-augmented generation using NVIDIA NIM inference microservices.
+[![NVIDIA](https://img.shields.io/badge/NVIDIA-NIM-76B900?style=for-the-badge&logo=nvidia)](https://build.nvidia.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![License](https://img.shields.io/badge/License-MIT-990F3D?style=for-the-badge)](LICENSE)
+
+**Production-ready RAG application** using NVIDIA NIM inference microservices for enterprise knowledge retrieval.
+
+---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         User Query                               │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    Streamlit Frontend                            │
-│                   (Query Interface)                              │
-└─────────────────────────────────────────────────────────────────┘
-                                │
-                                ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    FastAPI Backend                               │
-│  ┌─────────────┐   ┌──────────────┐   ┌───────────────────┐    │
-│  │   Router    │ → │ RAG Pipeline │ → │ Response Builder  │    │
-│  └─────────────┘   └──────────────┘   └───────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-          │                    │                    │
-          ▼                    ▼                    ▼
-┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
-│ NVIDIA NIM API   │ │   PgVector DB    │ │ NVIDIA Embeddings│
-│ (LLM Inference)  │ │ (Vector Store)   │ │ (NV-Embed-QA)    │
-│ build.nvidia.com │ │                  │ │ build.nvidia.com │
-└──────────────────┘ └──────────────────┘ └──────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        NVIDIA NIM RAG Pipeline                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         USER INTERFACE                               │   │
+│  │  ┌──────────────────────────────────────────────────────────────┐   │   │
+│  │  │  Streamlit Frontend  │  Query Input  │  Latency Display     │   │   │
+│  │  └──────────────────────────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         FASTAPI BACKEND                              │   │
+│  │  ┌────────────┐    ┌────────────────┐    ┌──────────────────┐      │   │
+│  │  │   Router   │───▶│  RAG Pipeline  │───▶│ Response Builder │      │   │
+│  │  │   /query   │    │  + Citations   │    │  + Latency       │      │   │
+│  │  └────────────┘    └────────────────┘    └──────────────────┘      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│         │                      │                      │                     │
+│         ▼                      ▼                      ▼                     │
+│  ┌────────────────┐   ┌────────────────┐   ┌────────────────┐              │
+│  │  NVIDIA NIM    │   │   PgVector     │   │ NV-Embed-QA    │              │
+│  │  LLM Inference │   │  Vector Store  │   │  Embeddings    │              │
+│  │  ~150ms TTFT   │   │  Similarity    │   │  ~50ms/doc     │              │
+│  └────────────────┘   └────────────────┘   └────────────────┘              │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  METRICS: TTFT ~150ms  │  E2E ~800ms  │  Throughput ~20 req/sec            │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Performance
+
+| Metric | Value | Description |
+|--------|-------|-------------|
+| **TTFT** | ~150ms | Time to first token |
+| **E2E Latency** | ~800ms | End-to-end query response |
+| **Embedding** | ~50ms | Document vectorization |
+| **Throughput** | ~20 req/sec | Concurrent handling |
+
+---
 
 ## Features
 
-- **NIM Integration**: Uses NVIDIA NIM API for fast inference
-- **Document Ingestion**: Upload PDFs and text files
-- **Semantic Search**: Vector embeddings with NVIDIA NV-Embed-QA
-- **Query Interface**: Clean Streamlit UI with latency metrics
-- **Response Citations**: Shows source documents used
+- **NIM Integration** - NVIDIA NIM API for fast LLM inference
+- **Document Ingestion** - Upload PDFs and text files
+- **Semantic Search** - Vector embeddings with NV-Embed-QA
+- **Query Interface** - Clean UI with latency metrics
+- **Response Citations** - Source documents displayed
+
+---
 
 ## Quick Start
 
-### 1. Setup Environment
+### 1. Clone and Setup
 
 ```bash
-# Clone the repo
-git clone https://github.com/Qbitloop/nvidia-nim-rag-demo.git
+git clone https://github.com/QbitLoop/nvidia-nim-rag-demo.git
 cd nvidia-nim-rag-demo
 
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
 ### 2. Configure API Keys
 
 ```bash
-# Copy example env
 cp .env.example .env
-
-# Edit .env with your NVIDIA API key
-# Get your key at: https://build.nvidia.com
+# Edit .env with your NVIDIA API key from https://build.nvidia.com
 ```
 
-### 3. Start PostgreSQL with pgvector
+### 3. Start Database
 
 ```bash
-# Using Docker
 docker-compose up -d postgres
-
-# Or use local PostgreSQL with pgvector extension
 ```
 
-### 4. Run the Application
+### 4. Run Application
 
 ```bash
-# Start FastAPI backend
+# Backend
 uvicorn app.main:app --reload --port 8000
 
-# In another terminal, start Streamlit frontend
+# Frontend (new terminal)
 streamlit run app/streamlit_app.py
 ```
 
-### 5. Access the Demo
+### 5. Access
 
-- **Frontend**: http://localhost:8501
-- **API Docs**: http://localhost:8000/docs
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:8501 |
+| API Docs | http://localhost:8000/docs |
 
-## Performance Metrics
-
-| Metric | Value | Description |
-|--------|-------|-------------|
-| TTFT | ~150ms | Time to first token |
-| E2E Latency | ~800ms | End-to-end query response |
-| Embedding Speed | ~50ms | Document vectorization |
-| Throughput | ~20 req/sec | Concurrent query handling |
+---
 
 ## Project Structure
 
 ```
 nvidia-nim-rag-demo/
 ├── app/
-│   ├── __init__.py
 │   ├── main.py              # FastAPI application
 │   ├── nim_client.py        # NVIDIA NIM API wrapper
 │   ├── vector_store.py      # PgVector operations
@@ -112,16 +125,17 @@ nvidia-nim-rag-demo/
 │   ├── models.py            # Pydantic models
 │   └── streamlit_app.py     # Streamlit frontend
 ├── data/
-│   └── sample_docs/         # Sample documents for demo
+│   └── sample_docs/         # Sample documents
 ├── tests/
 │   └── test_rag.py
 ├── docker-compose.yml
 ├── requirements.txt
-├── .env.example
-└── README.md
+└── .env.example
 ```
 
-## NVIDIA Technologies Used
+---
+
+## NVIDIA Technologies
 
 | Technology | Purpose |
 |------------|---------|
@@ -129,30 +143,50 @@ nvidia-nim-rag-demo/
 | **NV-Embed-QA** | Document embeddings |
 | **build.nvidia.com** | API endpoints |
 
-## Use Cases Demonstrated
+---
 
-1. **Technical Documentation Q&A** - Query product docs
-2. **Policy Search** - Find relevant policies from corpus
-3. **Knowledge Base** - Enterprise knowledge retrieval
+## Use Cases
 
-## Built With
-
-- **NVIDIA NIM API** - `build.nvidia.com`
-- **FastAPI** - Backend framework
-- **Streamlit** - Frontend UI
-- **PostgreSQL + pgvector** - Vector database
-- **Python 3.11+**
-
-## Author
-
-**Waseem Habib**
-- GitHub: [@Qbitloop](https://github.com/Qbitloop)
-- LinkedIn: [Waseem Habib](https://www.linkedin.com/in/wh2002/)
-
-## License
-
-MIT License - See LICENSE for details
+| Use Case | Description |
+|----------|-------------|
+| Technical Documentation Q&A | Query product docs |
+| Policy Search | Find relevant policies |
+| Knowledge Base | Enterprise retrieval |
 
 ---
 
-*Built to demonstrate NVIDIA NIM capabilities for RAG applications*
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| LLM | NVIDIA NIM API |
+| Backend | FastAPI |
+| Frontend | Streamlit |
+| Vector DB | PostgreSQL + pgvector |
+| Language | Python 3.11+ |
+
+---
+
+## Related Projects
+
+| Project | Description |
+|---------|-------------|
+| [RealtimeVoice](https://github.com/QbitLoop/RealtimeVoice) | ASR Benchmark: Nemotron 21x faster |
+| [NemotronVoiceRAG](https://github.com/QbitLoop/NemotronVoiceRAG) | Voice-enabled RAG |
+| [ai-infra-advisor](https://github.com/QbitLoop/ai-infra-advisor) | TCO Calculator |
+
+---
+
+## Author
+
+**Waseem Habib** | [GitHub](https://github.com/QbitLoop) | [LinkedIn](https://www.linkedin.com/in/wh2002/)
+
+---
+
+## License
+
+MIT
+
+---
+
+*Built by [QbitLoop](https://github.com/QbitLoop) | Brand-WHFT Design System*

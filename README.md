@@ -1,5 +1,6 @@
 # NVIDIA NIM RAG Demo
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/QbitLoop/nvidia-nim-rag-demo/blob/main/notebooks/nvidia_nim_rag_colab.ipynb)
 [![NVIDIA](https://img.shields.io/badge/NVIDIA-NIM-76B900?style=for-the-badge&logo=nvidia)](https://build.nvidia.com)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
@@ -8,6 +9,10 @@
 **Production-ready RAG application** using NVIDIA NIM inference microservices for enterprise knowledge retrieval.
 
 ---
+
+## Try It Now
+
+**[Open in Google Colab](https://colab.research.google.com/github/QbitLoop/nvidia-nim-rag-demo/blob/main/notebooks/nvidia_nim_rag_colab.ipynb)** - No setup required, just add your NVIDIA API key!
 
 ## Architecture
 
